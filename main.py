@@ -2,15 +2,31 @@ import dotenv
 import webbrowser
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
+import pygame
 from requests_oauthlib import OAuth2Session
 import socket
 from emoji import demojize
 from datetime import datetime
 import re
+import os
+import signal
+import sys
 
+pwd = os.getcwd()
 config = dotenv.dotenv_values(".env")
 oauth = None
 sock = socket.socket()
+
+pygame.mixer.init()
+TW_SOUND_MESSAGE = None  # pygame.mixer.Sound(config['TW_SOUND_MESSAGE']) if config['TW_SOUND_MESSAGE'] else None
+
+
+def sigint_handler(in_signal, in_frame):
+    if sock:
+        sock.close()
+
+    print('До свидания!')
+    sys.exit(0)
 
 
 def get_oauth_token():
@@ -106,13 +122,13 @@ def main():
             if exp:
                 username, message = exp.groups()
                 print(f'{time} {username}: {message}')
-            else:
-                print(f'{time} {resp}')
 
-    sock.close()
+                if TW_SOUND_MESSAGE:
+                    pygame.mixer.Channel(0).play(TW_SOUND_MESSAGE)
+            else:
+                print(f'{time} >>> {resp}')
 
 
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, sigint_handler)
     main()
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
